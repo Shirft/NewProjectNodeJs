@@ -38,54 +38,73 @@ class ProductManager{
         this.idCounter++;
         await fs.promises.writeFile(this.path, JSON.stringify(this.products));
 
-    }
+    };
 
     getProducts=async()=>{
 
         if(fs.existsSync(this.path)){
             const listProducts=await fs.promises.readFile(this.path, 'utf-8');
             const read=JSON.parse(listProducts);
-            return console.log(read);
+            return read;
         }
         console.log(this.products);
         
     
-    }
+    };
 
     getProductById=async(id)=>{
-        const search=await fs.promises.readFile(this.path, 'utf-8');
-        const searchId=JSON.parse(search).find((e)=>e.id==id);
+        //const search=await fs.promises.readFile(this.path, 'utf-8');
+        const search=await this.getProducts();
+        const searchId=search.find((e)=>e.id==id);
         if(searchId){
-            return console.log(`Producto encontrado:\n ${JSON.stringify(searchId)}`);
+            //return console.log(`Producto encontrado:\n ${JSON.stringify(searchId)}`);
+           return searchId;
         }
-        console.log('Not found');
-    }
+        return {status:'error', message: 'Product not found'};
+    };
 
     updateProduct=async(id, body)=>{
-        const productsUp = await fs.promises.readFile(this.path, "utf-8");
-        const productsUpParse = JSON.parse(productsUp);
+        /*const productsUp = await fs.promises.readFile(this.path, "utf-8");
+        const productsUpParse = JSON.parse(productsUp);*/
+        const productsUpParse=await this.getProducts();
         let update = Object.assign(productsUpParse[id - 1], body);
 
         productsUpParse[id - 1] = update;
         this.products = productsUpParse;
         await fs.promises.writeFile(this.path, JSON.stringify(this.products));
         console.log(`Producto id ${id} actualizado`);
-    }
+    };
 
     deleteProduct=async(id)=>{
-        const readProducts= await fs.promises.readFile(this.path, 'utf-8');
-        const productsR=JSON.parse(readProducts);
-        if(productsR.find(e=>e.id==id)){
+        /*const readProducts= await fs.promises.readFile(this.path, 'utf-8');
+        const productsR=JSON.parse(readProducts);*/
+        const readProducts=await this.getProducts();
+        /*if(productsR.find(e=>e.id==id)){
             const productFilter=productsR.filter(e=>e.id!=id);
             this.products=productFilter;
             await fs.promises.writeFile(this.path, JSON.stringify(this.products));
             return console.log(`Producto id ${id} eliminado`);
         }
-        console.log(`Producto id ${id} no encontrado`);
-    }
+        console.log(`Producto id ${id} no encontrado`);*/
+        const index = products.findIndex((p) => p.id === id);
+        if (index !== -1) {
+            products.splice(index, 1);
+
+            await fs.promises.writeFile(this.path, JSON.stringify(products), "utf-8");
+
+            console.log("Producto eliminado");
+
+        } else {
+
+            console.log("Not Found");
+
+        };
+
+    };
 }
 
-const producto=new ProductManager();
+module.exports=ProductManager;
+//const producto=new ProductManager();
 //arreglo vacio
 //producto.getProducts();
 
