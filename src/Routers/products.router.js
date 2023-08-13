@@ -59,11 +59,33 @@ router.get('/:pid', async(req, res)=>{
     
 });
 
-router.post('/', async(res,req)=>{
+router.post('/', async(req, res)=>{
    
     try{
 
+        const pbody=req.body;
 
+        const{
+        title,
+        description,
+        price,
+        thumbnail,
+        code,
+        status,
+        category, 
+        stock,
+        } = pbody;
+
+        const empty=Object.values(pbody).find(e=>e=='');
+        if(empty){
+            return res.status(400).send({status:"error", message:"falta completar un campo"})
+        }
+
+        const addP=await pm.addProduct(title, description, price, thumbnail, code, status, category, stock);
+        if(addP.status=="error"){
+            return res.status(400).send(addP);
+        }
+        res.status(200).send(pbody);
 
     }catch(error){
 
@@ -73,14 +95,14 @@ router.post('/', async(res,req)=>{
 
 });
 
-router.put('/:pid', async(res, req)=>{
+router.put('/:pid', async(req, res)=>{
 
     try{
 
         const idUp=parseInt(req.params.pid);
         const bodyUp=req.body;
         const upgrade=await product.updateProduct(idUp, bodyUp);
-        return res.status(200).send({upgrade});
+        return res.status(200).send(upgrade);
 
     }catch(error){
 
@@ -90,17 +112,17 @@ router.put('/:pid', async(res, req)=>{
 
 });
 
-router.delete('/:pid', async(res, req)=>{
+router.delete('/:pid', async(req, res)=>{
 
     try{
 
         const idDel=parseInt(req.params.pid);
+        
         const delP=await product.deleteProduct(idDel);
 
-        if(delP.status=='error'){
-            return res.status(400).send(delP)
+        if(delP.status==='error'){
+            return res.status(400).send(delP);
         }
-        
         return res.status(200).send(delP);
 
     }catch(error){

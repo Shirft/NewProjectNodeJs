@@ -7,7 +7,7 @@ class ProductManager{
             this.products=[];
     }
 
-    addProduct= async(title, description, price, thumbnail, code, stock)=>{
+    addProduct= async(title, description, price, thumbnail, code, status, category, stock)=>{
 
         const product={
             id:this.idCounter,
@@ -16,22 +16,25 @@ class ProductManager{
             price,
             thumbnail,
             code,
+            status,
+            category,
             stock,
         };
 
         if(!Object.values(product).every(e=>e)){
-            return console.log('No pueden haber campos vacios');
+            return {status:'error', message:'No pueden haber campos vacios'};
         }
 
         const validation=this.products.find((e)=>e.code==product.code)
         if(validation){
-            return console.log('codigo ingresado repetido');
+            return {status:'error', message:'Codigo ingresado repetido'};
             
         }
-        console.log('Producto agregado correctamente ')
+        
         this.products.push(product);
         this.idCounter++;
         await fs.promises.writeFile(this.path, JSON.stringify(this.products));
+        return {status:'success', message:'Producto agregado correctamente', producto:product};
 
     };
 
@@ -42,7 +45,7 @@ class ProductManager{
             const read=JSON.parse(listProducts);
             return read;
         }
-        console.log(this.products);
+        return this.products;
         
     };
 
@@ -65,28 +68,29 @@ class ProductManager{
         productsUpParse[id - 1] = update;
         this.products = productsUpParse;
         await fs.promises.writeFile(this.path, JSON.stringify(this.products));
-        console.log(`Producto id ${id} actualizado`);
+        return {status:'success', message:`Producto id ${id} actualizado`};
+        
     };
 
     deleteProduct=async(id)=>{
 
         const readProducts=await this.getProducts();
-        const index = products.findIndex((p) => p.id === id);
+        const index = readProducts.findIndex((p) => p.id === id);
         if (index !== -1) {
-            products.splice(index, 1);
+            readProducts.splice(index, 1);
 
-            await fs.promises.writeFile(this.path, JSON.stringify(products), "utf-8");
-
-            return 'Producto Eliminado';
+            await fs.promises.writeFile(this.path, JSON.stringify(readProducts), "utf-8");
+            return {status:'success', message:'Producto Eliminado'};
 
         } else {
 
             return {status:'error', message:'Not Found'};
 
-        };
+        }
 
     };
 }
 
 module.exports=ProductManager;
+
 
