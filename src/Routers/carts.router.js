@@ -9,7 +9,7 @@ router.get('/', async(req, res)=>{
     try{
 
         let limit =req.query.limit;
-        const carts=await cart.getProducts();
+        const carts=await cart.getCart();
     
         if(!limit){
             return res.status(200).send({carts});
@@ -100,7 +100,10 @@ router.post('/:cid/product/:pid', async(req, res)=>{
         producto.product == pid;
     
         const carrito = await cart.getCartById(cid);
-        if (carrito.error) return res.status(400).send({ carrito });
+        if (carrito.error){
+            return res.status(400).send({ carrito });
+        }
+            
     
         let productoEncontrado = carrito.products.findIndex((prod) => prod.product == pid);
     
