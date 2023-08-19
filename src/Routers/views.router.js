@@ -1,0 +1,30 @@
+const ProductManager=require('../product');
+const express=require('express');
+const router=express.Router();
+
+const pm=new ProductManager();
+
+
+router.get('/', async(req, res)=>{
+    try {
+
+        const products = await pm.getProducts();
+        console.log(products);
+        res.render("index", { valueReturned: products })
+
+    }
+    catch (error) {
+
+        res.status(500).send({status:'error', message:'Internal server error'});
+
+    }
+
+})
+
+router.use('/realTimeProducts', (req, res)=>{
+
+    res.render('realTimeProducts', {});
+
+});
+
+module.exports=router;
