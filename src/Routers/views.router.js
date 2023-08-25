@@ -10,7 +10,7 @@ router.get('/', async(req, res)=>{
 
         const products = await pm.getProducts();
         console.log(products);
-        res.render("index", { valueReturned: products })
+        res.render("home", { valueReturned: products, style: 'home.css' });
 
     }
     catch (error) {

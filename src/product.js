@@ -45,7 +45,7 @@ class ProductManager{
             const read=JSON.parse(listProducts);
             return read;
         }
-        return this.products;
+        return [];
         
     };
 
