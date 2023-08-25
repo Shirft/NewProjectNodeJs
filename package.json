@@ -7,6 +7,7 @@
     "expres": "^0.0.5",
     "express": "^4.18.2",
     "express-handlebars": "^7.1.2",
-    "socket.io": "^4.7.2"
+    "socket.io": "^4.7.2",
+    "sweetalert2": "^11.7.27"
   }
 }

@@ -1,11 +1,12 @@
 const socket = io();
 const products = document.getElementById('products');
-const formulario = document.getElementById('form')
+const formulario = document.getElementById('form');
 
 
 const btnEliminar = () => {
-    const botones = document.getElementsByClassName('btn-danger')
-    const arrayBtn = Array.from(botones)
+
+    const botones = document.getElementsByClassName('btn-danger');
+    const arrayBtn = Array.from(botones);
 
     arrayBtn.forEach(element => {
         element.addEventListener('click', () => {
@@ -89,8 +90,9 @@ socket.on('products', data => {
 
 
 formulario.addEventListener('submit', (event) => {
+
     event.preventDefault()
-    console.log(event.target);
+    //console.log(event.target);
     const data = Object.fromEntries(new FormData(event.target))
     data['status'] = new Boolean(data['status'])
     data['thumbnails'] = ['empty']
