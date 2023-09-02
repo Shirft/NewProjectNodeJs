@@ -1,7 +1,7 @@
-const ProductManager=require('../product');
-const express=require('express');
-const router=express.Router();
+import {Router} from 'express';
+import ProductManager from '../DAO/Mongo/managers/productManager.js';
 
+const router=Router();
 const product=new ProductManager();
 
 router.get('/', async(req, res)=>{
@@ -12,7 +12,7 @@ router.get('/', async(req, res)=>{
         const products=await product.getProducts();
     
         if(!limit){
-            return res.status(200).send({products});
+            return res.status(200).send({status:'success', payload: products});
         }
     
         if(isNaN(Number(limit))){
@@ -21,10 +21,10 @@ router.get('/', async(req, res)=>{
     
         if(products.length>limit){
             const productsLimit=products.slice(0, limit);
-            return res.status(200).send({productsLimit});
+            return res.status(200).send({status:'success', payload: productsLimit});
         }
     
-        return res.status(200).send({products})
+        return res.status(200).send({status:'success', payload: products})
 
     }catch(error){
 
@@ -133,4 +133,4 @@ router.delete('/:pid', async(req, res)=>{
 
 });
 
-module.exports=router;
+export default router;

@@ -1,4 +1,4 @@
-const ProductManager=require('../product');
+const ProductManager=require('../DAO/FileSystem/product');
 const express=require('express');
 const router=express.Router();
 

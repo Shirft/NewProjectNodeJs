@@ -27,11 +27,11 @@ const btnEliminar = () => {
                   socket.emit('delete', Number(element.id))
                   socket.on('delete', (event) => {
                     // console.log(event);  
-                    Swal.fire(event.message, '', 'success')
+                    Swal.fire(event.message, '', 'success');
                   })
                   
                 } else {
-                  Swal.fire('the product was not removed', '', 'info')
+                  Swal.fire('the product was not removed', '', 'info');
                 }
               })
               
@@ -102,7 +102,7 @@ formulario.addEventListener('submit', (event) => {
     socket.emit('product', data)
 
     socket.on('message', (res) => {
-        if(res.status === 'error') {
+        if(res.status == 'error') {
             Swal.fire({
                 icon: 'error',
                 title: 'Error!',
@@ -119,5 +119,5 @@ formulario.addEventListener('submit', (event) => {
               })
         }
     })
-    formulario.reset()
+    formulario.reset();
 })

@@ -1,18 +1,29 @@
-const routeProducts=require('./Routers/products.router');
+/*const routeProducts=require('./Routers/products.router');
 const routeCarts=require('./Routers/carts.router');
 const routerViews=require('./Routers/views.router');
-const ProductManager=require('./product');
+const ProductManager=require('./DAO/FileSystem/product');
 const express=require('express');
 const handlebars=require('express-handlebars');
 const app=express();
-const port=8080;
+const PORT=process.env.PORT||8080;
 const {Server}=require('socket.io');
-const pm= new ProductManager();
+const pm= new ProductManager();*/
+import express from "express";
+import mongoose from "mongoose";
+import routerProducts from "./Routers/products.router.js";
+import __dirname from "./utils.js";
+
+const PORT=process.env.PORT||8080;
+const app=express();
+const url='mongodb+srv://mygue0908:UtM4Zu0rTztLaw6A@cluster7.sssws2v.mongodb.net/ecommerce?retryWrites=true&w=majority';
+mongoose.connect(url);
 
 app.use(express.json());
 app.use(express.urlencoded({extended: true}));
 app.use(express.static(__dirname+'/public'));
 
+app.use('/api/products', routerProducts);
+/*
 app.engine('handlebars', handlebars.engine());
 app.set('views', __dirname+'/views');
 app.set('view engine', 'handlebars');
@@ -20,11 +31,11 @@ app.set('view engine', 'handlebars');
 app.use('/api/products', routeProducts);
 app.use('/api/carts', routeCarts);
 app.use('/', routerViews);
+*/
 
-
-const httpServer=app.listen(port, ()=> console.log(`Port ${port} listening.`));
-
-const serverSocket = new Server(httpServer);
+//const httpServer=app.listen(PORT, ()=> console.log(`Port ${PORT} listening.`));
+app.listen(PORT, ()=> console.log(`Port ${PORT} listening.`));
+/*const serverSocket = new Server(httpServer);
 
 serverSocket.on('connection', async socket => {
     
@@ -49,4 +60,4 @@ serverSocket.on('connection', async socket => {
     })
 
     
-});
+});*/

@@ -31,9 +31,11 @@ class ProductManager{
             
         }
         
-        this.products.push(product);
+        //this.products.push(product);
+        const products= await this.getProducts();
+        products.push(product);
         this.idCounter++;
-        await fs.promises.writeFile(this.path, JSON.stringify(this.products));
+        await fs.promises.writeFile(this.path, JSON.stringify(products));
         return {status:'success', message:'Producto agregado correctamente', producto:product};
 
     };
