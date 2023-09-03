@@ -10,7 +10,10 @@ const {Server}=require('socket.io');
 const pm= new ProductManager();*/
 import express from "express";
 import mongoose from "mongoose";
+import handlebars from "express-handlebars";
 import routerProducts from "./Routers/products.router.js";
+import routerCarts from "./Routers/carts.router.js";
+import routerViews from "./Routers/views.router.js";
 import __dirname from "./utils.js";
 
 const PORT=process.env.PORT||8080;
@@ -23,18 +26,18 @@ app.use(express.urlencoded({extended: true}));
 app.use(express.static(__dirname+'/public'));
 
 app.use('/api/products', routerProducts);
-/*
+app.use('/api/carts', routerCarts);
+app.use('/', routerViews);
+
 app.engine('handlebars', handlebars.engine());
 app.set('views', __dirname+'/views');
 app.set('view engine', 'handlebars');
 
-app.use('/api/products', routeProducts);
-app.use('/api/carts', routeCarts);
-app.use('/', routerViews);
-*/
 
-//const httpServer=app.listen(PORT, ()=> console.log(`Port ${PORT} listening.`));
-app.listen(PORT, ()=> console.log(`Port ${PORT} listening.`));
+
+
+const httpServer=app.listen(PORT, ()=> console.log(`Port ${PORT} listening.`));
+
 /*const serverSocket = new Server(httpServer);
 
 serverSocket.on('connection', async socket => {

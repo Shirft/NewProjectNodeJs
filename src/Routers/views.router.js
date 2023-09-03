@@ -1,7 +1,7 @@
-const ProductManager=require('../DAO/FileSystem/product');
-const express=require('express');
-const router=express.Router();
+import ProductManager from '../DAO/Mongo/managers/productManager.js';
+import {Router} from 'express';
 
+const router= Router();
 const pm=new ProductManager();
 
 
@@ -27,4 +27,4 @@ router.use('/realTimeProducts', (req, res)=>{
 
 });
 
-module.exports=router;
+export default router;

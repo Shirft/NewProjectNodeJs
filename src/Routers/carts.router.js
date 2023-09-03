@@ -1,8 +1,8 @@
-const CartManager=require('../carts');
-const express=require('express');
-const router=express.Router();
+import {Router} from "express";
+import CartsManager from "../DAO/Mongo/managers/CartsManager.js";
 
-const cart=new CartManager();
+const router=Router();
+const cart=new CartsManager();
 
 router.get('/', async(req, res)=>{
 
@@ -100,11 +100,7 @@ router.post('/:cid/product/:pid', async(req, res)=>{
         producto.product == pid;
     
         const carrito = await cart.getCartById(cid);
-        if (carrito.error){
-            return res.status(400).send({ carrito });
-        }
-            
-    
+
         let productoEncontrado = carrito.products.findIndex((prod) => prod.product == pid);
     
         if (productoEncontrado !== -1) {
@@ -127,4 +123,4 @@ router.post('/:cid/product/:pid', async(req, res)=>{
 
 
 
-module.exports=router;
+export default router;
