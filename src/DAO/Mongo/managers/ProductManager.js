@@ -7,7 +7,11 @@ export default class ProductManager{
     };
 
     getProductById = (params) =>{
-        return productModel.findOne(params);
+        if(params){
+            return productModel.findOne(params);
+        }
+        return {status:'error', message:'Product not found'};
+        
     };
 
     addProduct = (product) =>{
