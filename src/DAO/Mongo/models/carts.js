@@ -17,6 +17,11 @@ const schema = new mongoose.Schema({
     }
 }, {timestamps:true})
 
+schema.pre('findOne', function(next){
+    this.populate('products._id')
+    next()
+})
+
 const cartsModel = mongoose.model(collection, schema);
 
 export default cartsModel;

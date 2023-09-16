@@ -34,8 +34,6 @@ app.set('views', __dirname+'/views');
 app.set('view engine', 'handlebars');
 
 
-
-
 const httpServer=app.listen(PORT, ()=> console.log(`Port ${PORT} listening.`));
 
 /*const serverSocket = new Server(httpServer);

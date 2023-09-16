@@ -1,126 +1,210 @@
 import {Router} from "express";
 import CartsManager from "../DAO/Mongo/managers/CartsManager.js";
+import ProductManager from "../DAO/Mongo/managers/productManager.js";
 
 const router=Router();
 const cart=new CartsManager();
+const product=new ProductManager();
 
-router.get('/', async(req, res)=>{
+// ENDPOINT Auxiliar para corroborar todos los carritos y hacer diferentes pruebas
 
-    try{
+router.get('/', async (req, res) => {
+    const result = await cart.getCarts()
+    return res.status(200).send(result)
+})
 
-        let limit =req.query.limit;
-        const carts=await cart.getCart();
-    
-        if(!limit){
-            return res.status(200).send({carts});
-        }
-    
-        if(isNaN(Number(limit))){
-            return res.status(400).send({status:'error', message:'Limit not found'});
-        }
-    
-        if(carts.length>limit){
-            const cartsLimit=carts.slice(0, limit);
-            return res.status(200).send({cartsLimit});
-        }
-    
-        return res.status(200).send({carts});
+// ENDPOINT Que devuelve un carrito
 
-    }catch(error){
+router.get('/:cid', async (req, res) => {
+    try {
+        const { cid } = req.params
+        
+        const result = await cart.getCartById(cid)
+        
+        // Si el resultado del GET tiene la propiedad 'CastError' devuelve un error
+        if(result === null || typeof(result) === 'string') return res.status(404).send({status:'error', message: 'ID not found' });
+        
 
-        return res.status(500).send({status:'error', message:'Interval server error'});
-
+        // Resultado
+        return res.status(200).send(result);
+    } catch (err) {
+        console.log(err);
     }
 
-});
+})
 
-router.get('/:cid', async(req, res)=>{
-
-    try{
-
-        const id=req.params.cid;
-
-        const validated=await cart.getCartById(id);
-        if(validated.status=='error'){
-            return res.status(400).send(validated);
-        }
-        return res.status(200).send(validated);
-
-    }catch(error){
-
-        return res.status(500).send({status:'error', message:'Internal server error'});
-
-    }
-
-
-});
+// ENDPOINT para crear un carrito con o sin productos
 
 router.post('/', async (req, res) => {
+    try {
+        const { products } = req.body
 
-    try{
+        
+        if (!Array.isArray(products)) return res.status(400).send({ status: 'error', message: 'TypeError' });
 
-        const carts = req.body;
+        // Corroborar si todos los ID de los productos existen
+        const results = await Promise.all(products.map(async (product) => {
+            const checkId = await product.getProductById(product._id);
+            if (checkId === null || typeof(checkId) === 'string') return res.status(404).send({status: 'error', message: `The ID product: ${product._id} not found`})
+        }))
 
-        const campoVacio = Object.values(carts).find((value) => value === "");
-        if (campoVacio) {
+        const check = results.find(value => value !== undefined)
+        if (check) return res.status(404).send(check)
+
+        const cart = await cart.addCart(products)
+        
+                
+        res.status(200).send(cart);
+
+    }
+    catch (err) {
+        console.log(err);
+    }
+})
+
+// ENDPOINT para colocar la cantidad de un producto
+
+router.post('/:cid/product/:pid', async (req, res) => {
+    try {
+        
+        let { cid, pid } = req.params
+        const { quantity } = req.body
+        
+        if (isNaN(Number(quantity))||!Number.isInteger(quantity)) return res.status(400).send({status:'error', payload:null, message: 'The quantity is not valid'})
+        
+        if (quantity < 1) return res.status(400).send({status:'error', payload:null, message:'The quantity must be greater than 1'})
+        
+        const checkIdProduct = await product.getProductById(pid);
+        
+
+        if (checkIdProduct === null || typeof(checkIdProduct) === 'string') return res.status(404).send({status: 'error', message: `The ID product: ${pid} not found`})
     
-          return res.status(400).send({ status: "error", message: "Falta completar algún campo" });
+        const checkIdCart = await cart.getCartById(cid)
+
+        if (checkIdCart === null || typeof(checkIdCart) === 'string') return res.status(404).send({status: 'error', message: `The ID cart: ${cid} not found`})
     
-        }
-      
-        if (carts.status === "error"){
-    
-            return res.status(400).send({ valueReturned });
-    
-        }
+        const result = await cart.addProductInCart(cid, { _id: pid, quantity })
+        
+        return res.status(200).send({message:`added product ID: ${pid}, in cart ID: ${cid}`, cart: result});
+
+    } catch (error) {
+        console.log(error);
+    }
+})
+
+// ENDPOINT que actualiza la lista de productos 
+
+router.put('/:cid', async (req, res) =>{
+    try {
+        const { cid } = req.params
+        const {products} = req.body
+        
+        const results = await Promise.all(products.map(async (product) => {
+            const checkId = await product.getProductById(product._id);
             
-        await cart.addCart(carts);
-        return res.status(200).send({status:'success', message:'Carrito agregado correctamente'});
+            if (checkId === null || typeof(checkId) === 'string') {
+                return res.status(404).send({status: 'error', message: `The ID product: ${product._id} not found`})
+            }
+        }))
+        const check = results.find(value => value !== undefined)
+        if (check) return res.status(404).send(check)
 
-    }catch(error){
-
-        return res.status(500).send({status:'error', message:'Internal server error'});
-
+    
+        const checkIdCart = await cart.getCartById(cid)
+        if (checkIdCart === null || typeof(checkIdCart) === 'string') return res.status(404).send({status: 'error', message: `The ID cart: ${cid} not found`})
+        
+        const cart = await cart.updateProductsInCart(cid, products)
+        return res.status(200).send({status:'success', payload:cart})
+    } catch (error) {
+        console.log(error);
     }
     
-  });
+})
 
-router.post('/:cid/product/:pid', async(req, res)=>{
-
-    try{
-
-        let producto = req.body;
-        const { cid, pid } = req.params;
-    
-        const{
-        product,
-        quantity,
-        }=producto;
-    
-        producto.product == pid;
-    
-        const carrito = await cart.getCartById(cid);
-
-        let productoEncontrado = carrito.products.findIndex((prod) => prod.product == pid);
-    
-        if (productoEncontrado !== -1) {
-            carrito.products[productoEncontrado].quantity = Number(carrito.products[productoEncontrado].quantity) + Number(producto.quantity);
-            await cart.updateCart(cid, carrito);
-            return res.status(200).send({ statusbar: "success", message: "producto agregado" });
-        }
-    
-        carrito.products.push(producto);
-        await cart.updateCart(cid, carrito);
-        return res.status(200).send({status: "success",message: "producto agregado", carrito: carrito.products });
-
-    }catch(error){
-
-        return res.status(500).send({status:'error', message:'Interval server error'});
-
+router.put('/:cid/product/:pid', async (req, res) => {
+    try {
+        
+        let { cid, pid } = req.params
+        const { quantity } = req.body
+        
+        console.log(quantity, 'quantity');
+        const checkIdProduct = await product.getProductById(pid);
+        console.log('checkIdProduct', checkIdProduct);
+        if (checkIdProduct === null || typeof(checkIdProduct) === 'string') return res.status(404).send({status: 'error', message: `The ID product: ${pid} not found`})
+        
+        const checkIdCart = await cart.getCartById(cid)
+        
+        console.log('checkIdCart', checkIdCart);
+        if (checkIdCart === null || typeof(checkIdCart) === 'string') return res.status(404).send({error: `The ID cart: ${cid} not found`})
+        
+        const result = checkIdCart.products.findIndex(product => product._id._id.toString() === pid)
+        console.log('result', result);
+        
+        if(result === -1) return res.status(404).send({status: 'error', payload:null, message:`the product with ID: ${pid} cannot be updated because it is not in the cart`})
+        
+        if (isNaN(Number(quantity))||!Number.isInteger(quantity)) return res.status(400).send({status:'error', payload:null, message: 'The quantity is not valid'})
+        
+        if (quantity < 1) return res.status(400).send({status:'error', payload:null, message:'The quantity must be greater than 1'})
+        
+        checkIdCart.products[result].quantity = quantity
+        
+        
+        const cart = await cart.updateOneProduct(cid, checkIdCart.products)
+        res.status(200).send({status:'success', cart})
+        
+    } catch (error) {
+        console.log(error);
     }
+})
+
+
+// ENDPOINT que elimina un producto dado
+
+router.delete('/:cid/product/:pid', async (req, res) =>{
+    try {
+        
+        const { cid, pid } = req.params
+
+        const checkIdProduct = await product.getProductById(pid);
+
+        if (checkIdProduct === null || typeof(checkIdProduct) === 'string') return res.status(404).send({status: 'error', message: `The ID product: ${pid} not found`})
     
-  });
+        const checkIdCart = await cart.getCartById(cid)
+        if (checkIdCart === null || typeof(checkIdCart) === 'string') return res.status(404).send({status: 'error', message: `The ID cart: ${cid} not found`})
+        
+        const findProduct = checkIdCart.products.findIndex((element) => element._id._id.toString() === checkIdProduct._id.toString())
+    
+        if(findProduct === -1) return res.status(404).send({error: `The ID product: ${pid} not found in cart`})
+        
+        checkIdCart.products.splice(findProduct, 1)
+        
+        const cart = await cart.deleteProductInCart(cid, checkIdCart.products)    
+    
+        return res.status(200).send({status:'success', message:`deleted product ID: ${pid}`, cart })
+    } catch (error) {
+        console.log(err);
+    }
+})
 
+// ENDPOINT que elimina todos los productos de un carrito
 
+router.delete('/:cid', async (req, res) => {
+    try {
+        const {cid} = req.params
+        const checkIdCart = await cart.getCartById(cid)
+        
+        if (checkIdCart === null || typeof(checkIdCart) === 'string') return res.status(404).send({error: `The ID cart: ${cid} not found`})
+        
+        if (checkIdCart.products.length === 0) return res.status(404).send({status: 'error', payload:null, message: 'The cart is already empty'})
+        
+        checkIdCart.products = []
+        
+        const cart = await cart.updateOneProduct(cid, checkIdCart.products)
+        return res.status(200).send({status:'success', message:`the cart whit ID: ${cid} was emptied correctly `, cart});
+        
+    } catch (error) {
+        console.log(error);
+    }
+})
 
 export default router;

@@ -4,133 +4,169 @@ import ProductManager from '../DAO/Mongo/managers/productManager.js';
 const router=Router();
 const product=new ProductManager();
 
-router.get('/', async(req, res)=>{
+//http://localhost:8080/api/products?limit=2
 
-    try{
+router.get('/', async (req, res) => {
+    try {
+        let { limit, page, sort, category } = req.query
+        console.log(req.originalUrl);
 
-        let limit =req.query.limit;
-        const products=await product.getProducts();
-    
-        if(!limit){
-            return res.status(200).send({status:'success', payload: products});
+        const options = {
+            page: Number(page) || 1,
+            limit: Number(limit) || 10,
+            sort: { price: Number(sort) }
+        };
+
+        if (!(options.sort.price === -1 || options.sort.price === 1)) {
+            delete options.sort
         }
-    
-        if(isNaN(Number(limit))){
-            return res.status(400).send({status:'error', message:'Limit not found'});
+
+
+        const links = (products) => {
+            let prevLink;
+            let nextLink;
+            if (req.originalUrl.includes('page')) {
+                prevLink = products.hasPrevPage ? req.originalUrl.replace(`page=${products.page}`, `page=${products.prevPage}`) : null;
+                nextLink = products.hasNextPage ? req.originalUrl.replace(`page=${products.page}`, `page=${products.nextPage}`) : null;
+                return { prevLink, nextLink };
+            }
+            if (!req.originalUrl.includes('?')) {
+                prevLink = products.hasPrevPage ? req.originalUrl.concat(`?page=${products.prevPage}`) : null;
+                nextLink = products.hasNextPage ? req.originalUrl.concat(`?page=${products.nextPage}`) : null;
+                return { prevLink, nextLink };
+            }
+            prevLink = products.hasPrevPage ? req.originalUrl.concat(`&page=${products.prevPage}`) : null;
+            nextLink = products.hasNextPage ? req.originalUrl.concat(`&page=${products.nextPage}`) : null;
+            return { prevLink, nextLink };
+
         }
-    
-        if(products.length>limit){
-            const productsLimit=products.slice(0, limit);
-            return res.status(200).send({status:'success', payload: productsLimit});
+
+        // Devuelve un array con las categorias disponibles y compara con la query "category"
+
+        const categories = await product.categories();
+
+        const result = categories.some(categ => categ === category)
+        if (result) {
+
+            const products = await product.getProducts({ category }, options);
+            const { prevLink, nextLink } = links(products);
+            const { totalPages, prevPage, nextPage, hasNextPage, hasPrevPage, docs } = products
+            return res.status(200).send({ status: 'success', payload: docs, totalPages, prevPage, nextPage, hasNextPage, hasPrevPage, prevLink, nextLink });
         }
-    
-        return res.status(200).send({status:'success', payload: products})
 
-    }catch(error){
-
-        return res.status(500).send({status:'error', message:'Internal server error'});
-
+        const products = await product.getProducts({}, options);
+        console.log(products, 'Product');
+        const { totalPages, prevPage, nextPage, hasNextPage, hasPrevPage, docs } = products
+        const { prevLink, nextLink } = links(products);
+        return res.status(200).send({ status: 'success', payload: docs, totalPages, prevPage, nextPage, hasNextPage, hasPrevPage, prevLink, nextLink });
+    } catch (err) {
+        console.log(err);
     }
 
-});
 
-router.get('/:pid', async(req, res)=>{
+})
 
-    try{
+//http://localhost:8080/api/products/
 
-        const id=parseInt(req.params.pid);
-        const productsId= await product.getProductById(id);
+router.get('/:pid', async (req, res) => {
+    try {
+        const { pid } = req.params
 
-        if(isNaN(Number(id))){
-            return res.status(400).send({status: 'error', message:'Product not found'})
-        }
-    
-        if(productsId.status=='error'){
-            return res.status(400).send(productsId);
-        }
-    
-        return res.status(200).send(productsId);
-
-    }catch(error){
-
-        return res.status(500).send({status:'error', message:'Internal server error'});
-
-    }
-    
-});
-
-router.post('/', async(req, res)=>{
-   
-    try{
-
-        const pbody=req.body;
-
-        const{
-        title,
-        description,
-        price,
-        thumbnail,
-        code,
-        status,
-        category, 
-        stock,
-        } = pbody;
-
-        const empty=Object.values(pbody).find(e=>e=='');
-        if(empty){
-            return res.status(400).send({status:"error", message:"falta completar un campo"})
-        }
-
-        const addP=await pm.addProduct(title, description, price, thumbnail, code, status, category, stock);
-        if(addP.status=="error"){
-            return res.status(400).send(addP);
-        }
-        res.status(200).send(pbody);
-
-    }catch(error){
-
-        return res.status(500).send({status:'error', message:'Interval server error'});
-
-    }
-
-});
-
-router.put('/:pid', async(req, res)=>{
-
-    try{
-
-        const idUp=parseInt(req.params.pid);
-        const bodyUp=req.body;
-        const upgrade=await product.updateProduct(idUp, bodyUp);
-        return res.status(200).send(upgrade);
-
-    }catch(error){
-
-        return res.status(500).send({status:'error', message:'Internal server error'});
-
-    }
-
-});
-
-router.delete('/:pid', async(req, res)=>{
-
-    try{
-
-        const idDel=parseInt(req.params.pid);
+        // Se devuelve el resultado
+        const result = await product.getProductById(pid)
         
-        const delP=await product.deleteProduct(idDel);
+        // En caso de que traiga por error en el ID de product
+        if (result === null || typeof(result) === 'string') return res.status(404).send({status: 'error', message: `The ID product: ${pid} not found`})
 
-        if(delP.status==='error'){
-            return res.status(400).send(delP);
-        }
-        return res.status(200).send(delP);
+        // Resultado
+        return res.status(200).send(result);
 
-    }catch(error){
-
-        return res.status(500).send({status:'error', message:'Internal server error'});
-
+    } catch (err) {
+        console.log(err);
     }
 
-});
+})
+
+//http://localhost:8080/api/products/
+
+router.post('/', async (req, res) => {
+    try {
+        const product = req.body
+        console.log(product);
+        const {
+            title,
+            description,
+            price,
+            code,
+            stock,
+            status,
+            category,
+            thumbnails,
+        } = product
+        
+        const checkProduct = Object.values(product).every(property => property)
+
+        if (!checkProduct) return res
+            .status(400)
+            .send({status:'error', message: "The product doesn't have all the properties" });
+
+        if (!(typeof title === 'string' &&
+            typeof description === 'string' &&
+            typeof price === 'number' &&
+            typeof code === 'string' &&
+            typeof stock === 'number' &&
+            typeof status === 'boolean' &&
+            typeof category === 'string' &&
+            Array.isArray(thumbnails)))
+            return res.status(400).send({ message: 'type of property is not valid' })
+
+        if (price < 0 || stock < 0) return res
+            .status(400)
+            .send({ message: 'Product and stock cannot be values less than or equal to zero' });
+
+        const result = await product.addProduct(product)
+        
+        if (result.code === 11000) return res
+            .status(400)
+            .send({ message: `E11000 duplicate key error collection: ecommerce.products dup key code: ${result.keyValue.code}` });
+
+        return res.status(201).send(result);
+    }
+    catch (err) {
+        console.log(err);
+
+    }
+})
+
+router.put('/:pid', async (req, res) => {
+    try {
+        const { pid } = req.params
+        const product = req.body
+
+        const result = await product.updateProduct(pid, product);
+        
+        if (result.message) return res.status(404).send({ message: `ID: ${pid} not found` })
+
+        return res.status(200).send(`The product ${result.title} whit ID: ${result._id} was updated`);
+    }
+    catch (err) {
+        console.log(err);
+    };
+
+})
+
+router.delete('/:pid', async (req, res) => {
+    try {
+        const { pid } = req.params
+        const result = await product.deleteProduct(pid)
+        // console.log(result)
+        if (!result) return res.status(404).send({ message: `ID: ${pid} not found` })
+
+        return res.status(200).send({ message: `ID: ${pid} was deleted` });
+
+    } catch (err) {
+        console.log(err);
+    }
+})
 
 export default router;
